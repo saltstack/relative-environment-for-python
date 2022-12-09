@@ -54,37 +54,21 @@ CICD = "CI" in os.environ
 NODOWLOAD = False
 
 
-SITECUSTOMIZE = '''"""
-Relenv site customize
-"""
-import os
-import site
-import sys
-
-# Remove any paths not relative to relenv's root directory, or a virtualenv's
-# root directory if one was created from the relenv python
-
-# On non virtualenv scenarios, sys.prefix is the same as sys.base_prefix,
-# while on virtualenv scenarios, they differ. Both of these prefixes should not
-# be removed from sys.path
-__valid_path_prefixes = tuple({sys.prefix, sys.base_prefix})
-__sys_path = []
-for __path in sys.path:
-    if __path.startswith(__valid_path_prefixes):
-        __sys_path.append(__path)
-
-# Replace sys.path
-sys.path[:] = __sys_path
-site.ENABLE_USER_SITE = False
-
-try:
-    import relenv.runtime
-except ImportError:
-    if "RELENV_DEBUG" in os.environ:
-        print("Unable to find relenv.runtime for bootstrap.", file=sys.stderr, flush=True)
-else:
-    relenv.runtime.bootstrap()
-'''
+# RELENV_PTH is defined as a list of strings to be more readable. Once written
+# down to a file, it will be a single line, which is the only line that get's
+# executed in a .pth file
+RELENV_PTH = [
+    "import os;",
+    "import site;",
+    "import sys;",
+    "sys.path[:] = [p for p in sys.path if p.startswith(tuple({sys.prefix, sys.base_prefix}))];",
+    "site.ENABLE_USER_SITE = False;",
+    "import relenv.runtime;",
+    "relenv.runtime.bootstrap();",
+    "\n\n",
+    "# The line above removes any paths not relative to relenv's root directory, or a virtualenv's",
+    "# root directory if one was created from the relenv python.\n",
+]
 
 SYSCONFIGDATA = """
 import pathlib, sys, platform, os
@@ -1096,6 +1080,17 @@ def find_sysconfigdata(pymodules):
                 return file[:-3]
 
 
+def write_relenv_pth_file(site_packages_dir):
+    """
+    Write the 00000-relenv.pth file into site-packages.
+
+    :param site_packages_dir: The path to site-packages where to write the file to.
+    """
+    # Lay down the relenv pth file
+    with io.open(str(site_packages_dir / "00000-relenv-runtime.pth"), "w") as fp:
+        fp.write(" ".join(RELENV_PTH))
+
+
 def finalize(env, dirs, logfp):
     """
     Run after we've fully built python.
@@ -1121,6 +1116,7 @@ def finalize(env, dirs, logfp):
                     return _
 
     pymodules = libdir / find_pythonlib(libdir)
+    site_packages_dir = pymodules / "site-packages"
 
     cwd = os.getcwd()
     modname = find_sysconfigdata(pymodules)
@@ -1135,14 +1131,11 @@ def finalize(env, dirs, logfp):
     dest = pymodules / f"{modname}.py"
     install_sysdata(mod, dest, dirs.prefix, dirs.toolchain)
 
-    # Lay down site customize
-    bindir = pathlib.Path(dirs.prefix) / "bin"
-    sitecustomize = pymodules / "site-packages" / "sitecustomize.py"
-    with io.open(str(sitecustomize), "w") as fp:
-        fp.write(SITECUSTOMIZE)
+    # Lay down the relenv pth file
+    write_relenv_pth_file(site_packages_dir)
 
     # Lay down relenv.runtime, we'll pip install the rest later
-    relenv = pymodules / "site-packages" / "relenv"
+    relenv = site_packages_dir / "relenv"
     os.makedirs(relenv, exist_ok=True)
     runtime = MODULE_DIR / "runtime.py"
     dest = relenv / "runtime.py"

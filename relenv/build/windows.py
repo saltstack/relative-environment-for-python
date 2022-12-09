@@ -11,7 +11,7 @@ import os
 import pathlib
 import tarfile
 
-from .common import Builder, runcmd, create_archive, MODULE_DIR, SITECUSTOMIZE
+from .common import Builder, runcmd, create_archive, MODULE_DIR, write_relenv_pth_file
 from ..common import arches, WIN32
 
 ARCHES = arches[WIN32]
@@ -148,12 +148,11 @@ def finalize(env, dirs, logfp):
     :param logfp: A handle for the log file
     :type logfp: file
     """
-    # Lay down site customize
     bindir = pathlib.Path(dirs.prefix) / "Scripts"
     sitepackages = dirs.prefix / "Lib" / "site-packages"
-    sitecustomize = sitepackages / "sitecustomize.py"
-    with io.open(str(sitecustomize), "w") as fp:
-        fp.write(SITECUSTOMIZE)
+
+    # Lay down the relenv pth file
+    write_relenv_pth_file(sitepackages)
 
     # Lay down relenv.runtime, we'll pip install the rest later
     relenvdir = sitepackages / "relenv"
