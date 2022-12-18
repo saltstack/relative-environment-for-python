@@ -1087,7 +1087,7 @@ def write_relenv_pth_file(site_packages_dir):
     :param site_packages_dir: The path to site-packages where to write the file to.
     """
     # Lay down the relenv pth file
-    with io.open(str(site_packages_dir / "00000-relenv-runtime.pth"), "w") as fp:
+    with io.open(str(site_packages_dir / "50-relenv-runtime.pth"), "w") as fp:
         fp.write(" ".join(RELENV_PTH))
 
 
