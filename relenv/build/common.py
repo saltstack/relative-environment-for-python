@@ -1162,6 +1162,7 @@ def finalize(env, dirs, logfp):
         stdout=logfp,
     )
 
+    bindir = pathlib.Path(dirs.prefix) / "bin"
     # Fix the shebangs in the scripts python layed down.
     patch_shebangs(
         str(pathlib.Path(dirs.prefix) / "bin"),
