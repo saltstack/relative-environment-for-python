@@ -1166,7 +1166,7 @@ def finalize(env, dirs, logfp):
     # Fix the shebangs in the scripts python layed down.
     patch_shebangs(
         str(pathlib.Path(dirs.prefix) / "bin"),
-        "#!{}".format(str(bindir / "python3.10")),
+        "#!{}".format(str(bindir / "python3")),
         SHEBANG_TPL.format("/python3"),
     )
 
