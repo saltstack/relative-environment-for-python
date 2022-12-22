@@ -13,10 +13,12 @@ import time
 import urllib.error
 import urllib.request
 
-# relenv package version
-__version__ = "0.4.9"
 
 MODULE_DIR = pathlib.Path(__file__).resolve().parent
+
+# relenv package version
+with open(MODULE_DIR / "version.txt") as fp:
+    __version__ = fp.read().strip()
 
 LINUX = "linux"
 WIN32 = "win32"
